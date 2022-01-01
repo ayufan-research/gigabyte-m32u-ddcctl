@@ -102,7 +102,7 @@ void setControl(io_service_t framebuffer, uint control_id, uint new_value)
     command.control_id = control_id;
     command.new_value = new_value;
 
-    MyLog(@"D: setting VCP control #%u => %u", command.control_id, command.new_value);
+    MyLog(@"D: setting VCP control #%u => %u / %x", command.control_id, command.new_value, command.new_value);
     if (!DDCWrite(framebuffer, &command)){
         MyLog(@"E: Failed to send DDC command!");
     }
@@ -343,6 +343,12 @@ int main(int argc, const char * argv[])
                 [actions setObject:@[@COLOR_PRESET_C, [[NSString alloc] initWithUTF8String:argv[i]]] forKey:@"preset_c"];
             }
 
+            else if (!strcmp(argv[i], "-vendor_ext")) {
+                i++;
+                if (i >= argc) break;
+                [actions setObject:@[@VENDOR_EXTENSION, [[NSString alloc] initWithUTF8String:argv[i]]] forKey:@"vendor_ext"];
+            }
+
             else if (!strcmp(argv[i], "-i")) {
                 i++;
                 if (i >= argc) break;
@@ -477,6 +483,9 @@ int main(int argc, const char * argv[])
                 } else if ([argval hasPrefix:@"?"]) {
                     // read current setting
                     getControl(framebuffer, control_id);
+                } else if ([argval hasPrefix:@"0x"]) {
+                    // write fixed setting
+                    setControl(framebuffer, control_id, strtoull([argval UTF8String]+2, NULL, 16));
                 } else if (argval_num == argval) {
                     // write fixed setting
                     setControl(framebuffer, control_id, [argval intValue]);
