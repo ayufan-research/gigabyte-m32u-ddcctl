@@ -160,56 +160,63 @@ void getSetControl(io_service_t framebuffer, uint control_id, NSString *new_valu
     setControl(framebuffer, control_id, (uint) clamped_value);
 }
 
+void printDisplay(CGDirectDisplayID screenNumber)
+{
+    CFUUIDRef screenUUID = CGDisplayCreateUUIDFromDisplayID(screenNumber);
+    CFStringRef screenUUIDstr = CFUUIDCreateString(NULL, screenUUID);
+    CGDisplayModeRef displayMode = CGDisplayCopyDisplayMode(screenNumber);
+    float displayWidth = CGDisplayModeGetWidth(displayMode);
+    float displayHeight = CGDisplayModeGetHeight(displayMode);
+    float displayScale = CGDisplayModeGetPixelWidth(displayMode) / CGDisplayModeGetWidth(displayMode);
+    double rotation = CGDisplayRotation(screenNumber);
+    if (displayScale > 1) {
+        MyLog(@"D: CGDisplay %@ dispID(#%u) (%.0fx%.0f %g°) HiDPI",
+            screenUUIDstr,
+            screenNumber,
+            displayWidth,
+            displayHeight,
+            rotation);
+    }
+    else {
+        MyLog(@"D: CGDisplay %@ dispID(#%u) (%.0fx%.0f %g°) %0.2f DPI",
+            screenUUIDstr,
+            screenNumber,
+            displayWidth,
+            displayHeight,
+            rotation,
+            (displayWidth / displayHeight) * 25.4f); // there being 25.4 mm in an inch
+    }
+
+    #ifdef DEBUG
+    NSString *devLoc = getDisplayDeviceLocation(screenNumber);
+    if (devLoc) {
+        MyLog(@"D:   -> location %@", devLoc);
+    }
+#endif
+}
+
 /* Main function */
 int main(int argc, const char * argv[])
 {
 
     @autoreleasepool {
+        CGDirectDisplayID displays[10];
+        uint32_t numDisplays = 0;
+        uint32_t validDisplays = 0;
 
-        NSPointerArray *_displayIDs = [NSPointerArray pointerArrayWithOptions:NSPointerFunctionsOpaqueMemory | NSPointerFunctionsIntegerPersonality];
+        CGGetOnlineDisplayList(sizeof(displays)/sizeof(displays[0]), displays, &numDisplays);
 
-        for (NSScreen *screen in NSScreen.screens)
+        for (uint32_t i = 0; i < numDisplays; i++)
         {
-            NSDictionary *description = [screen deviceDescription];
-            if ([description objectForKey:@"NSDeviceIsScreen"]) {
-                CGDirectDisplayID screenNumber = [[description objectForKey:@"NSScreenNumber"] unsignedIntValue];
-                if (CGDisplayIsBuiltin(screenNumber)) continue; // ignore MacBook screens because the lid can be closed and they don't use DDC.
-                // https://stackoverflow.com/a/48450870/3878712
-                CFUUIDRef screenUUID = CGDisplayCreateUUIDFromDisplayID(screenNumber);
-                CFStringRef screenUUIDstr = CFUUIDCreateString(NULL, screenUUID);
-                [_displayIDs addPointer:(void *)(UInt64)screenNumber];
-                NSSize displayPixelSize = [[description objectForKey:NSDeviceSize] sizeValue];
-                CGSize displayPhysicalSize = CGDisplayScreenSize(screenNumber); // dspPhySz only valid if EDID present!
-                float displayScale = [screen backingScaleFactor];
-                double rotation = CGDisplayRotation(screenNumber);
-                if (displayScale > 1) {
-                    MyLog(@"D: CGDisplay %@ dispID(#%u) (%.0fx%.0f %g°) HiDPI",
-                          screenUUIDstr,
-                          screenNumber,
-                          displayPixelSize.width,
-                          displayPixelSize.height,
-                          rotation);
-                }
-                else {
-                    MyLog(@"D: CGDisplay %@ dispID(#%u) (%.0fx%.0f %g°) %0.2f DPI",
-                          screenUUIDstr,
-                          screenNumber,
-                          displayPixelSize.width,
-                          displayPixelSize.height,
-                          rotation,
-                          (displayPixelSize.width / displayPhysicalSize.width) * 25.4f); // there being 25.4 mm in an inch
-                }
+            CGDirectDisplayID screenNumber = displays[i];
+            if (CGDisplayIsBuiltin(screenNumber))
+                continue; // ignore MacBook screens because the lid can be closed and they don't use DDC.
 
-#ifdef DEBUG
-                NSString *devLoc = getDisplayDeviceLocation(screenNumber);
-                if (devLoc) {
-                    MyLog(@"D:   -> location %@", devLoc);
-                }
-#endif
-            }
+            displays[validDisplays++] = screenNumber;
+            printDisplay(screenNumber);
         }
-        MyLog(@"I: found %lu external display%@", [_displayIDs count], [_displayIDs count] > 1 ? @"s" : @"");
 
+        MyLog(@"I: found %u external display%@", validDisplays, validDisplays > 1 ? @"s" : @"");
 
         // Defaults
         NSString *screenName = @"";
@@ -406,13 +413,13 @@ int main(int argc, const char * argv[])
             }
         }
 
-        if (0 >= displayId || displayId > [_displayIDs count]) {
+        if (0 >= displayId || displayId > validDisplays) {
             // no display id given, nothing left to do!
             NSLog(@"%@", HelpString);
             exit(1);
         }
 
-        CGDirectDisplayID cdisplay = (CGDirectDisplayID)[_displayIDs pointerAtIndex:displayId - 1];
+        CGDirectDisplayID cdisplay = displays[displayId - 1];
 
         // find & grab the IOFramebuffer for the display, the IOFB is where DDC/I2C commands are sent
         io_service_t framebuffer = 0;
