@@ -115,7 +115,7 @@ Standard DDC/CI codes supported.
 | 0x5B | N/A GPU Frequency | ? | ? |
 | 0x5C | N/A GPU FAN | ? | ? |
 | 0x5D | N/A GPU Usage | ? | ? |
-| 0x69 | KVM device | 0x0 | 0 - USB-B, 1 - Type-C |
-| 0x6A | KVM status| 0x0 | 0 - disabled, 1 - enabled |
+| 0x69 | KVM switch device | 0x0 | set 1 |
+| 0x6A | KVM switch button | 0x0 | 0 - disabled, 1 - enabled |
 | 0x6B | KVM with USB-B | 0x0 | 0 - HDMI1, 1 - HDMI2, 2 - DP, 3 - Type-C |
 | 0x6C | KVM with Type-C | 0x0 | 0 - HDMI1, 1 - HDMI2, 2 - DP, 3 - Type-C |
