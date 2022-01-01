@@ -1,0 +1,11 @@
+./bin/release/ddcctl -d 1 -vendor_ext 0x3700XX - crosshair: XX: 0 - Disabled, 1-4 Different styles
+./bin/release/ddcctl -d 1 -vendor_ext 0x0e00XX - PBP/PIP ON/OFF: XX: 0 - Off, 1 - PIP, 2 - PBP
+./bin/release/ddcctl -d 1 -vendor_ext 0x0f00XX - PBP/PIP Source: 2 - DP, 3 - DP ALT
+./bin/release/ddcctl -d 1 -vendor_ext 0x100001 - PBP/PIP Switch
+./bin/release/ddcctl -d 1 -vendor_ext 0x130001 - PBP/PIP Audio Switch ?
+./bin/release/ddcctl -d 1 -vendor_ext 0x1400XX - PIP Size: 0 - large, 1 - medium, 2 - small
+./bin/release/ddcctl -d 1 -vendor_ext 0x1500XX - PIP Location: 0 - TL, 1 - TR, 2 - BL, 3 - BR
+./bin/release/ddcctl -d 1 -vendor_ext 0x1800XX - Dashboard On/Off: 0 - Off, 1 - On
+./bin/release/ddcctl -d 1 -vendor_ext 0x1900XX - Dashboard location: 0 - Top, 1 - Bottom
+./bin/release/ddcctl -d 1 -vendor_ext 0x2200XX - Framerate: 0 - Off, 1 - On
+./bin/release/ddcctl -d 1 -vendor_ext 0x2E0000 - Audio Input: 0 - Current, 1 - PIP/PBP
