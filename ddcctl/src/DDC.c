@@ -218,35 +218,52 @@ bool DDCWrite(io_service_t framebuffer, struct DDCWriteCommand *write) {
     request.sendAddress                     = 0x6E;
     request.sendTransactionType             = kIOI2CSimpleTransactionType;
     request.sendBuffer                      = (vm_address_t) &data[0];
-    request.sendBytes                       = 7;
 
+    UInt8 *datap = &data[4];
+
+    if (write->new_value >= 0x10000000000) {
+        *datap++ = (write->new_value) >> 40;
+        *datap++ = (write->new_value) >> 24;
+        *datap++ = (write->new_value) >> 16;
+        *datap++ = (write->new_value) >> 8;
+        *datap++ = write->new_value & 255;
+    } else if (write->new_value >= 0x100000000) {
+        *datap++ = (write->new_value) >> 32;
+        *datap++ = (write->new_value) >> 24;
+        *datap++ = (write->new_value) >> 16;
+        *datap++ = (write->new_value) >> 8;
+        *datap++ = write->new_value & 255;
+    } else if (write->new_value >= 0x1000000) {
+        *datap++ = (write->new_value) >> 24;
+        *datap++ = (write->new_value) >> 16;
+        *datap++ = (write->new_value) >> 8;
+        *datap++ = write->new_value & 255;
+    } else if (write->new_value >= 0x10000) {
+        *datap++ = (write->new_value) >> 16;
+        *datap++ = (write->new_value) >> 8;
+        *datap++ = write->new_value & 255;
+    } else {
+        *datap++ = (write->new_value) >> 8;
+        *datap++ = write->new_value & 255;
+    }
+
+    // set header
     data[0] = 0x51;
-    data[1] = 0x84;
+    data[1] = 0x80 | (datap - &data[2]);
     data[2] = 0x03;
     data[3] = write->control_id;
 
-    if (write->new_value >= 0x1000000) {
-        request.sendBytes = 9;
-        data[4] = (write->new_value) >> 24;
-        data[5] = (write->new_value) >> 16;
-        data[6] = (write->new_value) >> 8;
-        data[7] = write->new_value & 255;
-        data[8] = 0x6E ^ data[0] ^ data[1] ^ data[2] ^ data[3]^ data[4] ^ data[5] ^ data[6] ^ data[7];
-    } else if (write->new_value >= 0x10000) {
-        request.sendBytes = 8;
-        data[4] = (write->new_value) >> 16;
-        data[5] = (write->new_value) >> 8;
-        data[6] = write->new_value & 255;
-        data[7] = 0x6E ^ data[0] ^ data[1] ^ data[2] ^ data[3]^ data[4] ^ data[5] ^ data[6];
-    } else {
-        request.sendBytes = 7;
-        data[4] = (write->new_value) >> 8;
-        data[5] = write->new_value & 255;
-        data[6] = 0x6E ^ data[0] ^ data[1] ^ data[2] ^ data[3]^ data[4] ^ data[5];
-    }
+    // calculate checksum
+    *datap = request.sendAddress;
+    for (UInt8 *p = &data[0]; p < datap; )
+        *datap ^= *p++;
+    datap++;
 
+    request.sendBytes = datap - data;
     request.replyTransactionType            = kIOI2CNoTransactionType;
     request.replyBytes                      = 0;
+
+    printf("data[1]=%0x, sendBytes:%d\n", data[1], request.sendBytes);
 
     bool result = FramebufferI2CRequest(framebuffer, &request);
     return result;

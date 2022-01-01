@@ -96,13 +96,13 @@ uint getControl(CGDirectDisplayID cdisplay, uint control_id)
 }
 
 /* Set new value for control from display */
-void setControl(io_service_t framebuffer, uint control_id, uint new_value)
+void setControl(io_service_t framebuffer, uint control_id, uint64_t new_value)
 {
     struct DDCWriteCommand command;
     command.control_id = control_id;
     command.new_value = new_value;
 
-    MyLog(@"D: setting VCP control #%u => %u / %x", command.control_id, command.new_value, command.new_value);
+    MyLog(@"D: setting VCP control #%u => %llu / %llx", command.control_id, command.new_value, command.new_value);
     if (!DDCWrite(framebuffer, &command)){
         MyLog(@"E: Failed to send DDC command!");
     }
@@ -495,7 +495,7 @@ int main(int argc, const char * argv[])
                     setControl(framebuffer, control_id, strtoull([argval UTF8String]+2, NULL, 16));
                 } else if (argval_num == argval) {
                     // write fixed setting
-                    setControl(framebuffer, control_id, [argval intValue]);
+                    setControl(framebuffer, control_id, [argval longLongValue]);
                 }
             }
             usleep(command_interval); // stagger comms to these wimpy I2C mcu's

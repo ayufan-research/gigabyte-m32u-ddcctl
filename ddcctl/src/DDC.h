@@ -66,7 +66,7 @@
 struct DDCWriteCommand
 {
     UInt8 control_id;
-    UInt32 new_value;
+    UInt64 new_value;
 };
 
 struct DDCReadCommand
