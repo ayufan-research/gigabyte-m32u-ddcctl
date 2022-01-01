@@ -55,6 +55,7 @@
 #define COLOR_PRESET_B                 0xDC     // dell u2515h -> Presets: 0 = Standard, 2 = Multimedia, 3 = Movie, 5 = Game
 #define VCP_VERSION 0xDF
 #define COLOR_PRESET_C                 0xE0     // dell u2515h -> Brightness on/off (0 or 1)
+#define VENDOR_EXTENSION                 0xE0 
 #define POWER_CONTROL 0xE1
 #define TOP_LEFT_SCREEN_PURITY 0xE8
 #define TOP_RIGHT_SCREEN_PURITY 0xE9
@@ -65,7 +66,7 @@
 struct DDCWriteCommand
 {
     UInt8 control_id;
-    UInt8 new_value;
+    UInt32 new_value;
 };
 
 struct DDCReadCommand

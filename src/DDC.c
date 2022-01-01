@@ -224,9 +224,26 @@ bool DDCWrite(io_service_t framebuffer, struct DDCWriteCommand *write) {
     data[1] = 0x84;
     data[2] = 0x03;
     data[3] = write->control_id;
-    data[4] = (write->new_value) >> 8;
-    data[5] = write->new_value & 255;
-    data[6] = 0x6E ^ data[0] ^ data[1] ^ data[2] ^ data[3]^ data[4] ^ data[5];
+
+    if (write->new_value >= 0x1000000) {
+        request.sendBytes = 9;
+        data[4] = (write->new_value) >> 24;
+        data[5] = (write->new_value) >> 16;
+        data[6] = (write->new_value) >> 8;
+        data[7] = write->new_value & 255;
+        data[8] = 0x6E ^ data[0] ^ data[1] ^ data[2] ^ data[3]^ data[4] ^ data[5] ^ data[6] ^ data[7];
+    } else if (write->new_value >= 0x10000) {
+        request.sendBytes = 8;
+        data[4] = (write->new_value) >> 16;
+        data[5] = (write->new_value) >> 8;
+        data[6] = write->new_value & 255;
+        data[7] = 0x6E ^ data[0] ^ data[1] ^ data[2] ^ data[3]^ data[4] ^ data[5] ^ data[6];
+    } else {
+        request.sendBytes = 7;
+        data[4] = (write->new_value) >> 8;
+        data[5] = write->new_value & 255;
+        data[6] = 0x6E ^ data[0] ^ data[1] ^ data[2] ^ data[3]^ data[4] ^ data[5];
+    }
 
     request.replyTransactionType            = kIOI2CNoTransactionType;
     request.replyBytes                      = 0;
