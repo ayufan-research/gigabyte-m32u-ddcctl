@@ -72,6 +72,7 @@ struct DDCWriteCommand
 struct DDCReadCommand
 {
     UInt8 control_id;
+    UInt8 ask_value;
     bool success;
     UInt8 max_value;
     UInt8 current_value;

@@ -78,13 +78,14 @@ NSString *getDisplayDeviceLocation(CGDirectDisplayID cdisplay)
 }
 
 /* Get current value for control from display */
-uint getControl(CGDirectDisplayID cdisplay, uint control_id)
+uint getControl(CGDirectDisplayID cdisplay, uint control_id, uint ask_value)
 {
     struct DDCReadCommand command;
     command.control_id = control_id;
+    command.ask_value = ask_value;
     command.max_value = 0;
     command.current_value = 0;
-    MyLog(@"D: querying VCP control: #%u =?", command.control_id);
+    MyLog(@"D: querying VCP control: #%u / %02x =?", command.control_id, command.ask_value);
 
     if (!DDCRead(cdisplay, &command)) {
         MyLog(@"E: DDC send command failed!");
@@ -468,7 +469,7 @@ int main(int argc, const char * argv[])
         // Debugging
         if (dump_values) {
             for (uint i=0x00; i<=255; i++) {
-                getControl(framebuffer, i);
+                getControl(framebuffer, i, 0);
                 usleep(command_interval);
             }
         }
@@ -487,9 +488,12 @@ int main(int argc, const char * argv[])
                 } else if ([argval hasSuffix:@"+"] || [argval hasSuffix:@"-"]) { // NN+/- relative
                     // read, calculate, then write
                     getSetControl(framebuffer, control_id, argval_num, [argval substringFromIndex:argval.length - 1]);
+                } else if ([argval hasPrefix:@"?0x"]) {
+                    // read current setting
+                    getControl(framebuffer, control_id, strtoull([argval UTF8String]+3, NULL, 16));
                 } else if ([argval hasPrefix:@"?"]) {
                     // read current setting
-                    getControl(framebuffer, control_id);
+                    getControl(framebuffer, control_id, strtoull([argval UTF8String]+1, NULL, 16));
                 } else if ([argval hasPrefix:@"0x"]) {
                     // write fixed setting
                     setControl(framebuffer, control_id, strtoull([argval UTF8String]+2, NULL, 16));

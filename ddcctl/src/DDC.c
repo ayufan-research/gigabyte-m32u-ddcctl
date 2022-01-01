@@ -263,8 +263,6 @@ bool DDCWrite(io_service_t framebuffer, struct DDCWriteCommand *write) {
     request.replyTransactionType            = kIOI2CNoTransactionType;
     request.replyBytes                      = 0;
 
-    printf("data[1]=%0x, sendBytes:%d\n", data[1], request.sendBytes);
-
     bool result = FramebufferI2CRequest(framebuffer, &request);
     return result;
 }
@@ -284,13 +282,27 @@ bool DDCRead(io_service_t framebuffer, struct DDCReadCommand *read) {
         request.sendAddress                     = 0x6E;
         request.sendTransactionType             = kIOI2CSimpleTransactionType;
         request.sendBuffer                      = (vm_address_t) &data[0];
-        request.sendBytes                       = 5;
         request.minReplyDelay                   = reply_timeout;
+
+        UInt8 *datap = &data[4];
+        if (read->ask_value >= 0) {
+            *datap++ = read->ask_value & 255;
+        }
+
+        // set header
         data[0] = 0x51;
-        data[1] = 0x82;
+        data[1] = 0x80 | (datap - &data[2]);
         data[2] = 0x01;
         data[3] = read->control_id;
-        data[4] = 0x6E ^ data[0] ^ data[1] ^ data[2] ^ data[3];
+
+        // calculate checksum
+        *datap = request.sendAddress;
+        for (UInt8 *p = &data[0]; p < datap; )
+            *datap ^= *p++;
+        datap++;
+
+        request.sendBytes = datap - data;
+
 #ifdef TT_SIMPLE
         request.replyTransactionType    = kIOI2CSimpleTransactionType;
 #elif defined TT_DDC
