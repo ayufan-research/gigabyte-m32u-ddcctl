@@ -19,6 +19,8 @@
 
 #import <Foundation/Foundation.h>
 #import <AppKit/NSScreen.h>
+#import <CoreGraphics/CoreGraphics.h>
+#import <ColorSync/ColorSync.h>
 #import "DDC.h"
 
 #ifdef BLACKLIST
