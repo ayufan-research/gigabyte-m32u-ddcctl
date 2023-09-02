@@ -6,9 +6,9 @@ programmatically either over USB (HID device in KVM mode) or using DDC/CI (over 
 The vendor codes are equal for HID and DDC/CI, as HID device effectively
 encapsulates DDC/CI communication.
 
-- This repository contains a fix for [ddcctl (OSX)](https://github.com/kfix/ddcctl]
+- This repository contains a fix for [ddcctl (OSX)](https://github.com/kfix/ddcctl)
   to allow control various aspects of the monitor - to be used on Intel MAC
-- This repository contains a fix for [m1ddc (OSX)](https://github.com/waydabber/m1ddc]
+- This repository contains a fix for [m1ddc (OSX)](https://github.com/waydabber/m1ddc)
   to allow control various aspects of the monitor - to be used on M1 MAC
 
 The change can easily be adapted to [ddccontrol](https://github.com/ddccontrol/ddccontrol)
