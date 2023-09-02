@@ -18,6 +18,7 @@ extern IOReturn IOAVServiceWriteI2C(IOAVServiceRef service, uint32_t chipAddress
 #define RED 0x16 // VCP Code - Video Gain (Drive): Red
 #define GREEN 0x18 // VCP Code - Video Gain (Drive): Green
 #define BLUE 0x1A // VCP Code - Video Gain (Drive): Blue
+#define VENDOR_EXTENSION 0xE0
 
 #define DDC_WAIT 10000 // depending on display this must be set to as high as 50000
 #define DDC_ITERATIONS 2 // depending on display this must be set higher
@@ -48,6 +49,7 @@ int main(int argc, char** argv) {
     "                           DisplayPort 1: 15, DisplayPort 2: 16, HDMI 1: 17 HDMI 2: 18, USB-C: 27.\n"
     " set input-alt n         - Sets input source to n (using alternate addressing, as used by LG), common values include:\n"
     "                           DisplayPort 1: 208, DisplayPort 2: 209, HDMI 1: 144 HDMI 2: 145, USB-C / DP 3: 210.\n"
+    " set vendor_ext n        - Send vendor extension with n being 16bit, 24 and 32bit.\n"
     "\n"
     " set mute on             - Sets mute on (you can use 1 instead of 'on')\n"
     " set mute off            - Sets mute off (you can use 2 instead of 'off')\n"
@@ -56,6 +58,7 @@ int main(int argc, char** argv) {
     " get contrast            - Returns current contrast (if supported by the display).\n"
     " get (red,green,blue)    - Returns current color gain (if supported by the display).\n"
     " get volume              - Returns current volume (if supported by the display).\n"
+    " get vendor_ext n        - Get vendor extension value n being 8bit, 16bit, 24 and 32bit.\n"
     "\n"
     " max luminance           - Returns maximum luminance (if supported by the display, usually 100).\n"
     " max contrast            - Returns maximum contrast (if supported by the display, usually 100).\n"
@@ -194,6 +197,7 @@ int main(int argc, char** argv) {
         else if ( !(strcmp(argv[s+2], "red")) || !(strcmp(argv[s+2], "r")) ) { data[2] = RED; }
         else if ( !(strcmp(argv[s+2], "green")) || !(strcmp(argv[s+2], "g")) ) { data[2] = GREEN; }
         else if ( !(strcmp(argv[s+2], "blue")) || !(strcmp(argv[s+2], "b")) ) { data[2] = BLUE; }
+        else if ( !(strcmp(argv[s+2], "vendor_ext")) ) { data[2] = VENDOR_EXTENSION; }
         else {
 
             returnText = @"Use 'luminance', 'contrast', 'volume' or 'mute' as second parameter! Enter 'm1ddc help' for help!\n";
@@ -217,14 +221,39 @@ int main(int argc, char** argv) {
 
         if ( !(strcmp(argv[s+1], "get")) || !(strcmp(argv[s+1], "max")) || !(strcmp(argv[s+1], "chg")) ) {
 
-            data[0] = 0x82;
-            data[1] = 0x01;
-            data[3] = 0x6e ^ data[0] ^ data[1] ^ data[2] ^ data[3];
+            int length = 0;
+            data[length++] = 0x80;
+            data[length++] = 0x01;
+            length++; // control code
+
+            if (argc > s+3) {
+                int getValue;
+
+                if (argc >= s+3 && argv[s+3][0] == '0' && argv[s+3][1] == 'x') {
+                    getValue = strtoull(argv[s+3]+2, NULL, 16);
+                } else {
+                    getValue = strtoull(argv[s+3], NULL, 16);
+                }
+
+                if (getValue >= 0x1000000)
+                    data[length++] = (getValue) >> 24;
+                if (getValue >= 0x10000)
+                    data[length++] = (getValue) >> 16;
+                if (getValue >= 0x100)
+                    data[length++] = (getValue) >> 8;
+                data[length++] = getValue & 255;
+                printf("getvalue: %08x, length: %d, value: %08x\n", getValue, length, data[0] | (length - 1));
+            }
+            data[0] |= length - 1;
+            data[length] = 0x6E;
+            for (int i = 0; i < length; i++)
+                data[length] ^= data[i];
+            length++;
 
             for (int i = 0; i < DDC_ITERATIONS; ++i) {
 
                 usleep(DDC_WAIT);
-                err = IOAVServiceWriteI2C(avService, 0x37, 0x51, data, 4);
+                err = IOAVServiceWriteI2C(avService, 0x37, 0x51, data, length);
 
                 if (err) {
 
@@ -287,7 +316,8 @@ int main(int argc, char** argv) {
 
             if ( !(strcmp(argv[s+3], "on")) ) { setValue=1; }
             else if ( !(strcmp(argv[s+3], "off")) ) { setValue=2; }
-            else { setValue = atoi(argv[s+3]); }
+            else if ( argv[s+3][0] == '0' && argv[s+3][1] == 'x') { setValue = strtoull(argv[s+3]+2, NULL, 16); }
+            else { setValue = strtoull(argv[s+3], NULL, 16); }
 
             if ( !(strcmp(argv[s+1], "chg")) ) {
 
@@ -297,16 +327,27 @@ int main(int argc, char** argv) {
 
             }
 
-            data[0] = 0x84;
-            data[1] = 0x03;
-            data[3] = (setValue) >> 8;
-            data[4] = setValue & 255;
-            data[5] = 0x6E ^ 0x51 ^ data[0] ^ data[1] ^ data[2] ^ data[3] ^ data[4];
+            printf("control: %d, value: %08x\n", data[2], setValue);
+
+            int length = 0;
+            data[length++] = 0x84;
+            data[length++] = 0x03;
+            length++; // control code
+            if (setValue >= 0x1000000)
+                data[length++] = (setValue) >> 24;
+            if (setValue >= 0x10000)
+                data[length++] = (setValue) >> 16;
+            data[length++] = (setValue) >> 8;
+            data[length++] = setValue & 255;
+            data[length] = 0x6E ^ 0x51;
+            for (int i = 0; i < length; i++)
+                data[length] ^= data[i];
+            length++;
 
             for (int i = 0; i <= DDC_ITERATIONS; i++) {
 
                 usleep(DDC_WAIT);
-                err = IOAVServiceWriteI2C(avService, 0x37, inputAddr, data, 6);
+                err = IOAVServiceWriteI2C(avService, 0x37, inputAddr, data, length);
 
                 if (err) {
 
