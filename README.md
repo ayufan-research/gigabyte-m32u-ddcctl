@@ -6,8 +6,10 @@ programmatically either over USB (HID device in KVM mode) or using DDC/CI (over 
 The vendor codes are equal for HID and DDC/CI, as HID device effectively
 encapsulates DDC/CI communication.
 
-This repository contains a fix for [ddcctl (OSX)](https://github.com/kfix/ddcctl]
-to allow control various aspects of the monitor.
+- This repository contains a fix for [ddcctl (OSX)](https://github.com/kfix/ddcctl]
+  to allow control various aspects of the monitor - to be used on Intel MAC
+- This repository contains a fix for [m1ddc (OSX)](https://github.com/waydabber/m1ddc]
+  to allow control various aspects of the monitor - to be used on M1 MAC
 
 The change can easily be adapted to [ddccontrol](https://github.com/ddccontrol/ddccontrol)
 or [gbmonctl](https://github.com/kelvie/gbmonctl).
@@ -17,23 +19,37 @@ This likely applies to all Gigabyte monitors based on Realtek and using OSD Side
 ## Example
 
 ```bash
+# Intel Mac
+make -C ddcctl
+
+# M1 Mac
+make -C m1ddc
+```
+
+```bash
 # Enable PIP
-./bin/release/ddcctl -d 1 -vendor_ext 0x0e0001
+ddcctl/bin/release/ddcctl -d 1 -vendor_ext 0x0e0001
+m1ddc/m1ddc display 1 set vendor_ext 0x0e0001
 
 # Enable PBP
-./bin/release/ddcctl -d 1 -vendor_ext 0x0e0002
+ddcctl/bin/release/ddcctl -d 1 -vendor_ext 0x0e0002
+m1ddc/m1ddc display 1 set vendor_ext 0x0e0002
 
 # Switch PBP/PIP inputs
-./bin/release/ddcctl -d 1 -vendor_ext 0x100001
+ddcctl/bin/release/ddcctl -d 1 -vendor_ext 0x100001
+m1ddc/m1ddc display 1 set vendor_ext 0x100001
 
 # Disable PBP/PIP
-./bin/release/ddcctl -d 1 -vendor_ext 0x0e0000
+ddcctl/bin/release/ddcctl -d 1 -vendor_ext 0x0e0000
+m1ddc/m1ddc display 1 set vendor_ext 0x0e0000
 
 # Switch KVM to USB-B
-./bin/release/ddcctl -d 1 -vendor_ext 0x690000
+ddcctl/bin/release/ddcctl -d 1 -vendor_ext 0x690000
+m1ddc/m1ddc display 1 set vendor_ext 0x690000
 
 # Switch KVM to Type-C
-./bin/release/ddcctl -d 1 -vendor_ext 0x690001
+ddcctl/bin/release/ddcctl -d 1 -vendor_ext 0x690001
+m1ddc/m1ddc display 1 set vendor_ext 0x690001
 ```
 
 ## DDC codes
@@ -49,7 +65,8 @@ Standard DDC/CI codes supported.
 
 ## Vendor codes
 
-./bin/release/ddcctl -d 1 -vendor_ext 0xXXYYZZ
+ddcctl/bin/release/ddcctl -d 1 -vendor_ext 0xXXYYZZ
+m1ddc/m1ddc display 1 set vendor_ext 0xXXYYZZ
 
 | XX   | Description | YY | ZZ |
 |------|-------------|----|----|
